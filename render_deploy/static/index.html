@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume Analyzer - AI-Powered Job Match</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .progress-bar {
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .skill-badge {
+            animation: fadeInUp 0.5s ease;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .file-upload-label {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .file-upload-label:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="gradient-bg text-white py-6 shadow-lg">
+        <div class="container mx-auto px-4">
+            <h1 class="text-4xl font-bold text-center">🎯 Resume Analyzer</h1>
+            <p class="text-center mt-2 text-purple-100">AI-Powered Job Match Analysis</p>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8 max-w-5xl">
+        <!-- Upload Form -->
+        <div class="bg-white rounded-lg shadow-lg p-8 mb-8">
+            <form id="analyzeForm">
+                <!-- Resume Upload -->
+                <div class="mb-6">
+                    <label class="block text-gray-700 text-lg font-semibold mb-3">
+                        📄 Upload Your Resume <span class="text-red-500">*</span>
+                    </label>
+                    <div class="flex items-center justify-center w-full">
+                        <label for="resume-upload" class="file-upload-label flex flex-col items-center justify-center w-full h-32 border-2 border-purple-300 border-dashed rounded-lg bg-purple-50 hover:bg-purple-100">
+                            <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                                <svg class="w-10 h-10 mb-3 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                                </svg>
+                                <p class="mb-2 text-sm text-gray-600"><span class="font-semibold">Click to upload</span> or drag and drop</p>
+                                <p class="text-xs text-gray-500">PDF or DOCX (MAX. 10MB)</p>
+                            </div>
+                            <input id="resume-upload" name="resume" type="file" class="hidden" accept=".pdf,.docx" required />
+                        </label>
+                    </div>
+                    <p id="file-name" class="mt-2 text-sm text-gray-600 italic"></p>
+                </div>
+
+                <!-- Job Description -->
+                <div class="mb-6">
+                    <label for="job-description" class="block text-gray-700 text-lg font-semibold mb-3">
+                        💼 Job Description
+                    </label>
+                    <textarea
+                        id="job-description"
+                        name="job_description"
+                        rows="8"
+                        class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-purple-500 transition"
+                        placeholder="Paste the job description here...
+
+Example:
+We are looking for a Full Stack Developer with experience in:
+- Node.js, Express.js
+- React, TypeScript
+- AWS, Docker, Kubernetes
+- REST APIs, Microservices
+..."
+                        required
+                    ></textarea>
+                </div>
+
+                <!-- Submit Button -->
+                <button
+                    type="submit"
+                    id="analyze-btn"
+                    class="w-full gradient-bg text-white font-bold py-4 px-6 rounded-lg hover:opacity-90 transition duration-300 transform hover:scale-105 shadow-lg"
+                >
+                    🚀 Analyze Resume
+                </button>
+            </form>
+        </div>
+
+        <!-- Loading Indicator -->
+        <div id="loading" class="hidden bg-white rounded-lg shadow-lg p-8 mb-8">
+            <div class="flex flex-col items-center">
+                <div class="loader mb-4"></div>
+                <h3 class="text-xl font-semibold text-gray-700 mb-2">Analyzing Your Resume...</h3>
+                <p class="text-gray-500 text-center mb-4">This may take a few seconds</p>
+                <!-- Progress Bar -->
+                <div class="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+                    <div id="progress-bar" class="progress-bar bg-gradient-to-r from-purple-500 to-pink-500 h-2.5 rounded-full"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results -->
+        <div id="results" class="hidden">
+            <!-- Match Score -->
+            <div class="bg-white rounded-lg shadow-lg p-8 mb-8">
+                <div class="text-center">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4">Match Score</h2>
+                    <div class="relative inline-flex items-center justify-center">
+                        <svg class="w-40 h-40 transform -rotate-90">
+                            <circle cx="80" cy="80" r="70" stroke="#e5e7eb" stroke-width="10" fill="transparent"></circle>
+                            <circle id="score-circle" cx="80" cy="80" r="70" stroke="url(#gradient)" stroke-width="10" fill="transparent" stroke-dasharray="440" stroke-dashoffset="440" stroke-linecap="round"></circle>
+                            <defs>
+                                <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                                    <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                        <div class="absolute">
+                            <span id="match-score" class="text-5xl font-bold text-gray-800">0</span>
+                            <span class="text-2xl text-gray-600">%</span>
+                        </div>
+                    </div>
+                    <p id="score-message" class="mt-4 text-lg text-gray-600"></p>
+                </div>
+            </div>
+
+            <!-- Matching Skills -->
+            <div class="bg-white rounded-lg shadow-lg p-8 mb-8">
+                <h3 class="text-2xl font-bold text-green-600 mb-4 flex items-center">
+                    <span class="text-3xl mr-2">✓</span> Matching Skills
+                </h3>
+                <div id="matching-skills" class="flex flex-wrap gap-2"></div>
+            </div>
+
+            <!-- Missing Skills -->
+            <div class="bg-white rounded-lg shadow-lg p-8 mb-8">
+                <h3 class="text-2xl font-bold text-red-600 mb-4 flex items-center">
+                    <span class="text-3xl mr-2">✗</span> Missing Skills
+                </h3>
+                <div id="missing-skills" class="flex flex-wrap gap-2"></div>
+            </div>
+
+            <!-- Suggestions -->
+            <div class="bg-white rounded-lg shadow-lg p-8">
+                <h3 class="text-2xl font-bold text-purple-600 mb-4 flex items-center">
+                    <span class="text-3xl mr-2">💡</span> Recommendations
+                </h3>
+                <div id="suggestions" class="space-y-4"></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-6 mt-12">
+        <div class="container mx-auto px-4 text-center">
+            <p>&copy; 2026 Resume Analyzer - Powered by AI</p>
+        </div>
+    </footer>
+
+    <script>
+        const form = document.getElementById('analyzeForm');
+        const resumeInput = document.getElementById('resume-upload');
+        const fileNameDisplay = document.getElementById('file-name');
+        const loading = document.getElementById('loading');
+        const results = document.getElementById('results');
+        const analyzeBtn = document.getElementById('analyze-btn');
+
+        // Display selected file name
+        resumeInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                fileNameDisplay.textContent = `Selected: ${file.name}`;
+                fileNameDisplay.classList.add('text-green-600', 'font-semibold');
+            }
+        });
+
+        // Form submission
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const jobDescription = document.getElementById('job-description').value;
+            const resumeFile = resumeInput.files[0];
+
+            // Validate resume file is uploaded
+            if (!resumeFile) {
+                alert('Please upload your resume (PDF or DOCX)');
+                return;
+            }
+
+            // Validate file type
+            const fileName = resumeFile.name.toLowerCase();
+            if (!fileName.endsWith('.pdf') && !fileName.endsWith('.docx')) {
+                alert('Please upload a PDF or DOCX file');
+                return;
+            }
+
+            // Validate file size (10MB max)
+            const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+            if (resumeFile.size > maxSize) {
+                alert('File size exceeds 10MB. Please upload a smaller file.');
+                return;
+            }
+
+            if (!jobDescription.trim()) {
+                alert('Please enter a job description');
+                return;
+            }
+
+            // Hide results and show loading
+            results.classList.add('hidden');
+            loading.classList.remove('hidden');
+            analyzeBtn.disabled = true;
+
+            // Animate progress bar
+            animateProgressBar();
+
+            // Prepare form data
+            const formData = new FormData();
+            formData.append('resume', resumeFile);
+            formData.append('job_description', jobDescription);
+
+            try {
+                // Call API
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('API Error:', errorText);
+                    throw new Error('Analysis failed');
+                }
+
+                const data = await response.json();
+                console.log('API Response:', data); // Debug log
+
+                // Display results
+                displayResults(data);
+
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred during analysis. Please try again or check the console for details.');
+            } finally {
+                loading.classList.add('hidden');
+                analyzeBtn.disabled = false;
+            }
+        });
+
+        function animateProgressBar() {
+            const progressBar = document.getElementById('progress-bar');
+            let width = 0;
+            const interval = setInterval(() => {
+                if (width >= 90) {
+                    clearInterval(interval);
+                } else {
+                    width += 10;
+                    progressBar.style.width = width + '%';
+                }
+            }, 300);
+
+            // Complete the progress when done
+            setTimeout(() => {
+                clearInterval(interval);
+                progressBar.style.width = '100%';
+            }, 5000);
+        }
+
+        function displayResults(data) {
+            console.log('Displaying results:', data); // Debug log
+            console.log('Missing skills:', data.missing_skills); // Debug log
+            console.log('Analysis:', data.analysis); // Debug log
+
+            // Show results section
+            results.classList.remove('hidden');
+            results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+            // Match Score
+            const score = data.match_score || 0;
+            document.getElementById('match-score').textContent = score;
+
+            // Animate score circle
+            const circle = document.getElementById('score-circle');
+            const circumference = 440;
+            const offset = circumference - (score / 100) * circumference;
+            setTimeout(() => {
+                circle.style.strokeDashoffset = offset;
+                circle.style.transition = 'stroke-dashoffset 1s ease-in-out';
+            }, 100);
+
+            // Score message
+            const scoreMessage = document.getElementById('score-message');
+            if (score >= 80) {
+                scoreMessage.textContent = '🎉 Excellent match! You\'re a strong candidate.';
+                scoreMessage.className = 'mt-4 text-lg text-green-600 font-semibold';
+            } else if (score >= 60) {
+                scoreMessage.textContent = '👍 Good match! Consider adding missing skills.';
+                scoreMessage.className = 'mt-4 text-lg text-blue-600 font-semibold';
+            } else {
+                scoreMessage.textContent = '💪 Needs improvement. Focus on key missing skills.';
+                scoreMessage.className = 'mt-4 text-lg text-orange-600 font-semibold';
+            }
+
+            // Matching Skills
+            const matchingSkillsContainer = document.getElementById('matching-skills');
+            matchingSkillsContainer.innerHTML = '';
+            if (data.matching_skills.length > 0) {
+                data.matching_skills.forEach((skill, index) => {
+                    const badge = document.createElement('span');
+                    badge.className = 'skill-badge px-4 py-2 bg-green-100 text-green-700 rounded-full text-sm font-semibold';
+                    badge.textContent = skill;
+                    badge.style.animationDelay = `${index * 0.05}s`;
+                    matchingSkillsContainer.appendChild(badge);
+                });
+            } else {
+                matchingSkillsContainer.innerHTML = '<p class="text-gray-500">No matching skills found</p>';
+            }
+
+            // Missing Skills
+            const missingSkillsContainer = document.getElementById('missing-skills');
+            missingSkillsContainer.innerHTML = '';
+
+            console.log('Missing skills array:', data.missing_skills, 'Length:', data.missing_skills?.length); // Debug
+
+            if (data.missing_skills && data.missing_skills.length > 0) {
+                console.log('Rendering missing skills...'); // Debug
+                data.missing_skills.forEach((skill, index) => {
+                    const badge = document.createElement('span');
+                    badge.className = 'skill-badge px-4 py-2 bg-red-100 text-red-700 rounded-full text-sm font-semibold';
+                    badge.textContent = skill;
+                    badge.style.animationDelay = `${index * 0.05}s`;
+                    missingSkillsContainer.appendChild(badge);
+                });
+            } else {
+                console.log('No missing skills, showing success message'); // Debug
+                missingSkillsContainer.innerHTML = '<p class="text-green-600 font-semibold text-lg">🎉 Excellent! All required skills are present in your resume!</p>';
+            }
+
+            // Suggestions
+            const suggestionsContainer = document.getElementById('suggestions');
+            suggestionsContainer.innerHTML = '';
+
+            console.log('Processing suggestions...', data.analysis); // Debug
+
+            if (data.analysis && data.analysis.suggestions && data.analysis.suggestions.length > 0) {
+                console.log('Found suggestions:', data.analysis.suggestions); // Debug
+                data.analysis.suggestions.forEach((suggestion, index) => {
+                    const card = document.createElement('div');
+                    card.className = 'skill-badge p-4 border-l-4 border-purple-500 bg-purple-50 rounded';
+                    card.style.animationDelay = `${index * 0.1}s`;
+
+                    const impactColors = {
+                        'high': 'text-red-600',
+                        'medium': 'text-orange-600',
+                        'low': 'text-yellow-600'
+                    };
+
+                    card.innerHTML = `
+                        <div class="flex justify-between items-start">
+                            <div class="flex-1">
+                                <h4 class="font-bold text-gray-800 mb-1">${suggestion.skill || 'Unknown Skill'}</h4>
+                                <p class="text-gray-600 text-sm">${suggestion.action || 'No action provided'}</p>
+                            </div>
+                            <span class="ml-4 px-3 py-1 rounded-full text-xs font-semibold ${impactColors[suggestion.selection_chance] || 'text-gray-600'} bg-white">
+                                ${suggestion.selection_chance ? suggestion.selection_chance.toUpperCase() + ' Impact' : 'Impact Unknown'}
+                            </span>
+                        </div>
+                    `;
+                    suggestionsContainer.appendChild(card);
+                });
+            } else {
+                console.log('No suggestions found, missing skills:', data.missing_skills); // Debug
+                // If no suggestions but there are missing skills, create basic ones
+                if (data.missing_skills && data.missing_skills.length > 0) {
+                    suggestionsContainer.innerHTML = `
+                        <p class="text-gray-600 mb-4">💡 Focus on acquiring these missing skills to improve your match:</p>
+                        <ul class="list-disc list-inside space-y-2 text-gray-700">
+                            ${data.missing_skills.map(skill => `<li><strong>${skill}</strong> - Consider taking online courses or working on projects to gain this skill</li>`).join('')}
+                        </ul>
+                    `;
+                } else {
+                    suggestionsContainer.innerHTML = '<p class="text-green-600">🎉 Great! You have all the required skills for this position!</p>';
+                }
+            }
+        }
+    </script>
+</body>
+</html>
