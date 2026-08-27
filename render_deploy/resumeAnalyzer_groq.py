@@ -6,10 +6,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from langchain_groq import ChatGroq
-llm = ChatGroq(
-    model="llama-3.1-8b-instant",
-    api_key=os.getenv("GROQ_API_KEY").strip()
-)
+  llm = ChatGroq(
+      model=os.getenv("GROQ_MODEL", "openai/gpt-oss-20b"),
+      api_key=os.getenv("GROQ_API_KEY").strip()
+  )
 
 class State(TypedDict):
     resume_text: str
